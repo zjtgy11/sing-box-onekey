@@ -459,7 +459,8 @@ install_sing-box() {
     else
         LOGI "install sing-box success"
     fi
-
+    #下载服务端配置文件
+    download_config "${REMOTE_SERVER_URL}" "config.json" "${CONFIG_FILE_PATH}"
 }
 # 设置开机自启服务，开启sing-box
 load_sing-box() {
@@ -615,7 +616,7 @@ install_merge() {
     #清除hysteria端口跳跃
     clear_iptables
 
-    download_config "${REMOTE_SERVER_URL}" "config.json" "${CONFIG_FILE_PATH}"    
+        
     mkdir -p "${CONFIG_FILE_PATH}/merge"
     install_shadowtls 443
     install_reality 18443 $((shadowtls_port))
@@ -817,7 +818,6 @@ install_hysteria() {
     clear_iptables
     #创建hysteria
     mkdir -p "${CONFIG_FILE_PATH}/hysteria"
-    download_config "${REMOTE_SERVER_URL}" "config.json" "${CONFIG_FILE_PATH}"
     # hysteria安装
     show_notice "下面开始安装超级快的hysteria协议"
     # 设置默认值为8443
@@ -993,7 +993,7 @@ install_tuic() {
     clear_iptables
     #创建tuic
     mkdir -p "${CONFIG_FILE_PATH}/tuic"
-    download_config "${REMOTE_SERVER_URL}" "config.json" "${CONFIG_FILE_PATH}"
+
     BLUE "开始安装和前男友一样温柔的tuic"
     # 设置默认值为8443
     set_default_value tuic_port ${1:-8443} "请输入tuic的端口号"
@@ -1146,7 +1146,7 @@ install_naive() {
     clear_iptables
     #创建naive
     mkdir -p "${CONFIG_FILE_PATH}/naive"
-    download_config "${REMOTE_SERVER_URL}" "config.json" "${CONFIG_FILE_PATH}"
+
     BLUE "开始安装和出差在家的老婆一样性感的naiveproxy"
     # 设置默认值为443
     set_default_value naive_port ${1:-443} "请输入naive的端口号"
@@ -1220,7 +1220,7 @@ install_vlessws() {
         #清除hysteria端口跳跃
     clear_iptables
     mkdir -p ${CONFIG_FILE_PATH}/vlessws
-    download_config "${REMOTE_SERVER_URL}" "config.json" "${CONFIG_FILE_PATH}"
+
     BLUE "开始安装准备淘汰了的协议了vless ws tls"
     # 设置默认值为443
     set_default_value vlessws_port ${1:-443} "请输入vlessws的端口号"
@@ -1379,7 +1379,7 @@ install_shadowtls() {
     clear_iptables
     # 客户端文件夹
     mkdir -p ${CONFIG_FILE_PATH}/shadowtls
-    download_config "${REMOTE_SERVER_URL}" "config.json" "${CONFIG_FILE_PATH}"
+
     BLUE "开始安装和女朋友前男友一样神秘的shadowtls"
     # 设置默认值为443
     set_default_value shadowtls_port ${1:-443} "请输入shadowtls的端口号"
@@ -1549,7 +1549,7 @@ install_reality() {
     clear_iptables
     # 创建配置文件
     mkdir -p ${CONFIG_FILE_PATH}/reality
-    download_config "${REMOTE_SERVER_URL}" "config.json" "${CONFIG_FILE_PATH}"
+
     # 读取输入的reality端口号
 
     BLUE "开始安装和小情人一样神秘的reality"
@@ -2119,11 +2119,15 @@ show_menu() {
     # 显示内容
     # 调用函数显示作者信息框
     show_author_info
-
+    status_check
+    is_install=""
+    if [[ $? == ${SING_BOX_STATUS_RUNNING} ]]; then
+        is_install="重新"
+    fi
     echo -e "
   ${green}0.${plain} 退出脚本
 ————————————————
-  ${green}1.${plain} 安装 sing-box 服务
+  ${green}1.${plain} ${is_install}安装 sing-box 服务
   ${green}2.${plain} 更新 sing-box 服务
   ${green}3.${plain} 卸载 sing-box 服务
   ${green}4.${plain} 启动 sing-box 服务
