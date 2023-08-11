@@ -489,12 +489,9 @@ insert_json_data() {
     mv temp.json "$destination_file"
 }
 choose_procotol() {
-    echo "#############################################################"
-    BLUE "#                 请选择你的协议                              #"
-    echo "#############################################################"
+    show_notice "请选择你要安装的的协议"
     echo "-------------------------------------------------------------"
-    echo "无需域名和证书"
-    PINK " 1. 安装三合一脚本(共用端口与网站共存)"
+    PINK " 1. 安装四合一脚本(共用端口与网站共存)"
     PINK " 2. 安装 Reality"
     PINK " 3. 安装Shadowtls v3"
     PINK " 4. 安装 NaiveProxy"
@@ -616,7 +613,7 @@ install_merge() {
     #清除hysteria端口跳跃
     clear_iptables
 
-        
+    show_notice "开始安装四合一协议-hysteria，reality，vless ws tls，shadowtls"    
     mkdir -p "${CONFIG_FILE_PATH}/merge"
     install_shadowtls 443
     install_reality 18443 $((shadowtls_port))
@@ -994,7 +991,7 @@ install_tuic() {
     #创建tuic
     mkdir -p "${CONFIG_FILE_PATH}/tuic"
 
-    BLUE "开始安装和前男友一样温柔的tuic"
+    show_notice "开始安装和前男友一样温柔的tuic"
     # 设置默认值为8443
     set_default_value tuic_port ${1:-8443} "请输入tuic的端口号"
     # 验证端口是否被占用
@@ -1147,7 +1144,7 @@ install_naive() {
     #创建naive
     mkdir -p "${CONFIG_FILE_PATH}/naive"
 
-    BLUE "开始安装和出差在家的老婆一样性感的naiveproxy"
+    show_notice "开始安装和出差在家的老婆一样性感的naiveproxy"
     # 设置默认值为443
     set_default_value naive_port ${1:-443} "请输入naive的端口号"
     # 验证端口是否被占用
@@ -1221,7 +1218,7 @@ install_vlessws() {
     clear_iptables
     mkdir -p ${CONFIG_FILE_PATH}/vlessws
 
-    BLUE "开始安装准备淘汰了的协议了vless ws tls"
+    show_notice "开始安装准备淘汰了的协议了vless ws tls"
     # 设置默认值为443
     set_default_value vlessws_port ${1:-443} "请输入vlessws的端口号"
     # 验证端口是否被占用
@@ -1380,7 +1377,7 @@ install_shadowtls() {
     # 客户端文件夹
     mkdir -p ${CONFIG_FILE_PATH}/shadowtls
 
-    BLUE "开始安装和女朋友前男友一样神秘的shadowtls"
+    show_notice "开始安装和女朋友前男友一样神秘的shadowtls"
     # 设置默认值为443
     set_default_value shadowtls_port ${1:-443} "请输入shadowtls的端口号"
     # 验证端口是否被占用
@@ -1552,7 +1549,7 @@ install_reality() {
 
     # 读取输入的reality端口号
 
-    BLUE "开始安装和小情人一样神秘的reality"
+    show_notice "开始安装和小情人一样神秘的reality"
     # 设置默认值为443
     set_default_value reality_port ${1:-443} "请输入reality的端口号"
     # 验证端口是否被占用
@@ -2037,7 +2034,6 @@ enable_warp() {
 EOF
         insert_json_data ${CONFIG_FILE_PATH}/warp/warp_rules.json ${CONFIG_FILE_PATH}/config.json "route"
 
-        #TODO outbounds
         cat <<EOF >${CONFIG_FILE_PATH}/warp/warp_outbounds.json
 {
             "outbounds": [{
