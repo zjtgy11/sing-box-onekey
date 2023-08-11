@@ -466,7 +466,27 @@ load_sing-box() {
     install_systemd_service && enable_sing-box && start_sing-box
     LOGI "安装sing-box成功,已启动成功"
 }
+insert_json_data() {
+    local source_file=$1
+    local destination_file=$2
+    local field_name=$3
 
+    # 从源文件中提取指定字段的数据
+    local data=$(jq ".$field_name" "$source_file")
+
+    # 检查目标文件中的字段是否为空数组
+    local is_empty=$(jq "if .\"$field_name\" == null or .\"$field_name\" == [] then true else false end" "$destination_file")
+
+    if [ "$is_empty" = true ]; then
+        # 如果目标字段为空数组或不存在，则直接将提取数据赋值给目标字段
+        jq --argjson data "$data" ".\"$field_name\" = \$data" "$destination_file" >temp.json
+    else
+        # 如果目标字段为非空数组，则将提取的数据追加到现有数组中
+        jq --argjson data "$data" ".\"$field_name\" += \$data" "$destination_file" >temp.json
+    fi
+
+    mv temp.json "$destination_file"
+}
 choose_procotol() {
     echo "#############################################################"
     BLUE "#                 请选择你的协议                              #"
@@ -479,7 +499,7 @@ choose_procotol() {
     PINK " 4. 安装 NaiveProxy"
     BLUE " 5. 安装vless ws tls（可开cdn）"
     PINK " 6. 安装 TUIC v5"
-    PINK " 7. 安装 Hysteria"
+    PINK " 7. 安装 Hysteria(可开启端口跳跃)"
     echo "-------------------------------------------------------------"
     echo -e " 0. 退出"
     echo ""
@@ -600,19 +620,19 @@ install_merge() {
     install_shadowtls 443
     install_reality 18443 $((shadowtls_port))
     install_vlessws 17443 $((shadowtls_port))
+    install_hysteria 20001
     insert_json_data ${CONFIG_FILE_PATH}/shadowtls/shadowtls_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
     insert_json_data ${CONFIG_FILE_PATH}/reality/reality_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
     insert_json_data ${CONFIG_FILE_PATH}/vlessws/vlessws_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
+    insert_json_data ${CONFIG_FILE_PATH}/hysteria/hysteria_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
     
-    
-    # 设置默认值为8443
+    set_default_value your_site_domain "www.domain.com" "请输入你自己的网站SNI分流"
+    BLUE "网站域名：$your_site_domain"
     set_default_value your_site_port 16443 "请输入你的网站的端口号SNI分流"
     # 验证端口是否被占用并设置端口
     your_site_port=$(validate_port "$your_site_port")
     BLUE "你的网站端口号：$your_site_port"
-    # 读取输入的hysteria-auth
-    set_default_value your_site_domain "www.domain.com" "请输入你的网站SNI分流"
-    BLUE "网站域名：$your_site_domain"
+
 
     jq --arg your_site_domain "$your_site_domain" \
     --argjson your_site_port "$your_site_port" \
@@ -646,8 +666,26 @@ install_merge() {
                 "urltest",
                 "vlessws",
                 "reality",
-                "ShadowTLS v3"
+                "Shadowtls",
+                "hysteria"
             ]
+        },
+        {
+        "type": "hysteria",
+        "tag": "hysteria",
+        "server": "${hysteria_domain}",
+        "server_port": ${2:-$((hysteria_port))},
+        "up_mbps": 50,
+        "down_mbps": 100,
+        "auth_str": "${hysteria_auth}",
+        "obfs": "${hysteria_obfs}",
+        "tls": {
+            "enabled": true,
+            "server_name": "${hysteria_domain}",
+            "alpn": [
+                "h3"
+            ]
+        }
         },
         {
             "server": "$vlessws_domain",
@@ -698,7 +736,7 @@ install_merge() {
         },
         {
             "password": "${ss_pwd}",
-            "tag": "ShadowTLS v3",
+            "tag": "Shadowtls",
             "type": "shadowsocks",
             "method": "2022-blake3-chacha20-poly1305",
             "network": "tcp",
@@ -738,7 +776,8 @@ install_merge() {
             "outbounds": [
                 "vlessws",
                 "reality",
-                "ShadowTLS v3"
+                "Shadowtls",
+                "hysteria"
             ]
         }
     ]
@@ -761,6 +800,7 @@ show_merge(){
             show_vlessws
             show_reality
             show_shadowtls
+            show_hysteria
             show_notice "集合sing-box配置"
             cat "${CLIENT_FILE_PATH}/merge_client.json"
         fi
@@ -769,27 +809,7 @@ show_merge(){
 }
 
 
-insert_json_data() {
-    local source_file=$1
-    local destination_file=$2
-    local field_name=$3
 
-    # 从源文件中提取指定字段的数据
-    local data=$(jq ".$field_name" "$source_file")
-
-    # 检查目标文件中的字段是否为空数组
-    local is_empty=$(jq "if .\"$field_name\" == null or .\"$field_name\" == [] then true else false end" "$destination_file")
-
-    if [ "$is_empty" = true ]; then
-        # 如果目标字段为空数组或不存在，则直接将提取数据赋值给目标字段
-        jq --argjson data "$data" ".\"$field_name\" = \$data" "$destination_file" >temp.json
-    else
-        # 如果目标字段为非空数组，则将提取的数据追加到现有数组中
-        jq --argjson data "$data" ".\"$field_name\" += \$data" "$destination_file" >temp.json
-    fi
-
-    mv temp.json "$destination_file"
-}
 
 # hysteria入站安装
 install_hysteria() {
