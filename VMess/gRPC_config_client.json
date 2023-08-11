@@ -1,0 +1,59 @@
+{
+    "log": {
+        "level": "info",
+        "timestamp": true
+    },
+    "route": {
+        "rules": [
+            {
+                "geosite": [
+                    "cn",
+                    "private"
+                ],
+                "geoip": [
+                    "cn",
+                    "private"
+                ],
+                "outbound": "direct"
+            }
+        ]
+    },
+    "inbounds": [
+        {
+            "type": "mixed",
+            "tag": "mixed-in",
+            "listen": "::",
+            "listen_port": 10000
+        }
+    ],
+    "outbounds": [
+        {
+            "type": "vmess",
+            "tag": "proxy",
+            "server": "",
+            "server_port": 443,
+            "uuid": "chika",
+            "security": "aes-128-gcm",
+            "alter_id": 0,
+            "global_padding": true,
+            "authenticated_length": true,
+            "tls": {
+                "enabled": true,
+                "server_name": "",
+                "utls": {
+                    "enabled": true,
+                    "fingerprint": "chrome"
+                }
+            },
+            "packet_encoding": "packetaddr",
+            "transport": {
+                "type": "grpc",
+                "service_name": "chika" // 与服务端一致
+            }
+        },
+        {
+            "type": "direct",
+            "tag": "direct"
+        }
+    ]
+}

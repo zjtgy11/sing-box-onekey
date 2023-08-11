@@ -1,0 +1,142 @@
+{
+    "log": {
+        "level": "info",
+        "timestamp": true
+    },
+    "dns": {
+        "servers": [
+            {
+                "tag": "dns_proxy",
+                "address": "1.1.1.1",
+                "address_resolver": "dns_direct",
+                "strategy": "ipv4_only", // 若服务端准备好了IPv6，可改为 prefer_ipv6
+                "detour": "proxy"
+            },
+            {
+                "tag": "dns_direct",
+                "address": "dhcp://auto",
+                "strategy": "ipv4_only", // 若客户端准备好了IPv6，可改为 prefer_ipv6
+                "detour": "direct"
+            },
+            {
+                "tag": "dns_block",
+                "address": "rcode://success"
+            }
+        ],
+        "rules": [
+            {
+                "geosite": [
+                    "category-ads-all"
+                ],
+                "server": "dns_block",
+                "disable_cache": true
+            },
+            {
+                "geosite": [
+                    "geolocation-!cn"
+                ],
+                "server": "dns_proxy"
+            },
+            {
+                "geosite": [
+                    "cn",
+                    "private"
+                ],
+                "server": "dns_direct"
+            },
+            {
+                "outbound": [
+                    "any"
+                ],
+                "server": "dns_direct"
+            }
+        ]
+    },
+    "route": {
+        "geoip": {
+            "download_url": "https://github.com/soffchen/sing-geoip/releases/latest/download/geoip.db"
+        },
+        "geosite": {
+            "download_url": "https://github.com/soffchen/sing-geosite/releases/latest/download/geosite.db"
+        },
+        "rules": [
+            {
+                "protocol": "dns",
+                "outbound": "dns-out"
+            },
+            {
+                "process_name": [ // 直连的 Windows 可执行程序
+                    "xray.exe",
+                    "hysteria.exe",
+                    "tuic.exe",
+                    "juicity.exe"
+                ],
+                "outbound": "direct"
+            },
+            {
+                "protocol": [
+                    "quic"
+                ],
+                "outbound": "block"
+            },
+            {
+                "geosite": [
+                    "category-ads-all"
+                ],
+                "outbound": "block"
+            },
+            {
+                "geosite": [
+                    "geolocation-!cn"
+                ],
+                "outbound": "proxy"
+            },
+            {
+                "geosite": [
+                    "cn",
+                    "private"
+                ],
+                "outbound": "direct"
+            },
+            {
+                "geoip": [
+                    "cn",
+                    "private"
+                ],
+                "outbound": "direct"
+            }
+        ],
+        "auto_detect_interface": true
+    },
+    "inbounds": [
+        {
+            "type": "tun",
+            "tag": "tun-in",
+            "inet4_address": "172.19.0.1/30",
+            "inet6_address": "fdfe:dcba:9876::1/126",
+            "auto_route": true,
+            "strict_route": true,
+            "stack": "system",
+            "sniff": true,
+            "sniff_override_destination": false
+        }
+    ],
+    "outbounds": [
+        {
+            // 粘贴你的客户端配置，需要保留 "tag": "proxy"
+            "tag": "proxy"
+        },
+        {
+            "type": "direct",
+            "tag": "direct"
+        },
+        {
+            "type": "block",
+            "tag": "block"
+        },
+        {
+            "type": "dns",
+            "tag": "dns-out"
+        }
+    ]
+}

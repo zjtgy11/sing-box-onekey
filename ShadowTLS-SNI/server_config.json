@@ -1,0 +1,159 @@
+{
+    "log": {
+      "disabled": false,
+      "level": "info",
+      "timestamp": true
+    },
+    "dns": {
+      "servers": [
+        { 
+          "tag": "local",
+          "address": "https://1.1.1.1/dns-query",
+          "detour": "direct"
+        },
+        {
+          "tag": "block",
+          "address": "rcode://success"
+        }
+      ],
+      "rules": [
+        { 
+          "geosite": "cn",
+          "server": "local"
+        },
+        {
+          "geosite": "category-ads-all",
+          "server": "block",
+          "disable_cache": true
+        }
+      ]
+    },
+    "inbounds": [
+      {
+        "type": "shadowtls",
+        "tag": "st-in",
+        "listen": "::",
+        "listen_port": "shadowtls-port", 
+        "version": 3, 
+        "users": [
+          {
+            "name": "shadowtls-username",  
+            "password": "shadowtls-pwd" 
+          }
+        ],
+        "handshake": {
+          "server": "shadowtls-domain", 
+          "server_port": 443
+        },
+      "handshake_for_server_name": {
+        "your-site-domain": {
+          "server": "127.0.0.1",
+          "server_port": "your-site-port"
+        },
+        "vlessws-site-domain": {
+          "server": "127.0.0.1",
+          "server_port": "vlessws-port"
+        },
+        "reality-domain": {
+  
+          "server": "127.0.0.1",
+  
+          "server_port": "reality-port"
+  
+      }},
+        "strict_mode": true, 
+        "detour": "ss-in"  
+      },
+      {
+        "type": "shadowsocks",   
+        "tag": "ss-in",
+        "listen": "127.0.0.1",
+        "network": "tcp",
+        "method": "2022-blake3-chacha20-poly1305",   
+        "password": "ss-pwd" 
+      },
+      {
+        "type": "vless",
+        "tag": "vless-in",
+        "listen": "::",
+        "listen_port": "reality-port", 
+        "users": [
+          {
+            "uuid": "reality-uuid", 
+            "flow": "xtls-rprx-vision"
+          }
+        ],
+        "tls": {
+          "enabled": true,
+          "server_name": "reality-domain", 
+          "reality": {
+            "enabled": true,
+            "handshake": {
+              "server": "reality-domain", 
+              "server_port": 443
+            },
+            "private_key": "reality-private-key", 
+            "short_id": [ 
+              "reality-shortid" 
+            ]
+          }
+        }
+      },
+      {
+        "type": "vless",
+        "tag": "vless-in",
+        "listen": "0.0.0.0",
+        "listen_port": "vlessws-port",
+        "users": [
+          {
+          "name": "vlessws-username",
+          "uuid": "vlessws-uuid",
+          "flow": ""
+          }
+        ],
+        "tls": {
+            "enabled": true,
+            "server_name": "vlessws-site-domain", 
+            
+          "min_version": "1.3", "certificate_path": "vlessws-cert",
+            "key_path": "vlessws-key"
+        },
+        "transport": {
+          "type": "ws",
+          "path": "vlessws-path",
+          "early_data_header_name": "Sec-WebSocket-Protocol"
+          }
+      }
+    ], 
+    "outbounds": [
+      {
+        "type": "direct",
+        "tag": "direct"
+      },
+      {
+        "type": "block",
+        "tag": "block"
+      }
+    ],
+    "route": {
+      "geoip": {
+        "download_url": "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db",
+        "download_detour": "direct"
+      },
+      "geosite": {
+        "download_url": "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db",
+        "download_detour": "direct"
+      }, 
+      "rules": [
+        {
+          "geosite": "cn",
+          "geoip": "cn",
+          "outbound": "direct"
+        },
+        {
+          "geosite": "category-ads-all",
+          "outbound": "block"
+        }
+      ]
+    }
+  }

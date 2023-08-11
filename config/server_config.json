@@ -1,0 +1,63 @@
+{
+    "log": {
+        "disabled": false,
+        "level": "info",
+        "timestamp": true
+    },
+    "dns": {
+        "servers": [
+            {
+                "tag": "local",
+                "address": "https://1.1.1.1/dns-query",
+                "detour": "direct"
+            },
+            {
+                "tag": "block",
+                "address": "rcode://success"
+            }
+        ],
+        "rules": [
+            {
+                "geosite": "cn",
+                "server": "local"
+            },
+            {
+                "geosite": "category-ads-all",
+                "server": "block",
+                "disable_cache": true
+            }
+        ]
+    },
+    "inbounds": [],
+    "outbounds": [
+        {
+            "type": "direct",
+            "tag": "direct"
+        },
+        {
+            "type": "block",
+            "tag": "block"
+        }
+    ],
+    "route": {
+        "geoip": {
+            "download_url": "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db",
+            "download_detour": "direct"
+        },
+        "geosite": {
+            "download_url": "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db",
+            "download_detour": "direct"
+        },
+        "rules": [
+            {
+                "geosite": "cn",
+                "geoip": "cn",
+                "outbound": "direct"
+            },
+            {
+                "geosite": "category-ads-all",
+                "outbound": "block"
+            }
+        ]
+    }
+}

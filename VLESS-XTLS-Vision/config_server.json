@@ -1,0 +1,33 @@
+{
+    "log": {
+        "level": "info",
+        "timestamp": true
+    },
+    "inbounds": [
+        {
+            "type": "vless",
+            "tag": "vless-in",
+            "listen": "::",
+            "listen_port": 443,
+            "sniff": true,
+            "sniff_override_destination": true,
+            "users": [
+                {
+                    "uuid": "chika", // 执行 sing-box generate uuid 生成
+                    "flow": "xtls-rprx-vision"
+                }
+            ],
+            "tls": {
+                "enabled": true,
+                "certificate_path": "/root/fullchain.cer",
+                "key_path": "/root/private.key"
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "type": "direct",
+            "tag": "direct"
+        }
+    ]
+}

@@ -1,0 +1,37 @@
+{
+    "log": {
+        "level": "info",
+        "timestamp": true
+    },
+    "inbounds": [
+        {
+            "type": "tuic",
+            "tag": "tuic-in",
+            "listen": "::",
+            "listen_port": 443,
+            "sniff": true,
+            "sniff_override_destination": true,
+            "users": [
+                {
+                    "uuid": "ee48f7be-6ae9-5654-9b61-8466aa8e16bc", // 执行 sing-box generate uuid 生成
+                    "password": "chika"
+                }
+            ],
+            "congestion_control": "bbr",
+            "tls": {
+                "enabled": true,
+                "alpn": [
+                    "h3"
+                ],
+                "certificate_path": "/root/fullchain.cer",
+                "key_path": "/root/private.key"
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "type": "direct",
+            "tag": "direct"
+        }
+    ]
+}
