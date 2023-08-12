@@ -78,7 +78,7 @@ function LOGI() {
 function LOGD() {
     echo -e "${yellow}[DEG] $* ${plain}"
 }
-
+#颜色框
 function PINK() {
     echo -e "${pink} $* ${plain}"
 }
@@ -131,7 +131,41 @@ confirm() {
         return 1
     fi
 }
+# 设置默认值的函数
+set_default_value() {
+    local var_name=${1:?missing argument}
+    local default_value=${2:?missing argument}
+    local prompt=${3:?missing argument}
+    read -rp "${prompt}（默认为${default_value}）：" value
+    eval "${var_name}=\${value:-${default_value}}"
+}
 
+# 验证输入端口号是否被占用
+validate_port() {
+    local port=${1:?missing argument}
+    while true; do
+        if netstat -ant | grep -q ":${port} "; then
+            echo "端口已被占用，请重新输入" >&2
+        elif ! [[ $port =~ ^[0-9]+$ ]]; then
+            echo "端口必须为数字，请重新输入" >&2
+        else
+            break # 跳出循环
+        fi
+        read -rp "请输入端口号：" port
+    done
+    echo "$port"
+}
+
+# 验证输入是否为空
+validate_input() {
+    local value=${1:?missing argument}
+    while [[ -z $value ]]; do
+        echo "输入不能为空，请重新输入" >&2
+        read -rp "请输入值：" value
+        continue
+    done
+    echo "$value"
+}
 #Root check
 [[ $EUID -ne 0 ]] && LOGE "请使用root用户运行该脚本" && exit 1
 
@@ -308,42 +342,6 @@ install_base() {
     fi
 }
 
-# 设置默认值的函数
-set_default_value() {
-    local var_name=${1:?missing argument}
-    local default_value=${2:?missing argument}
-    local prompt=${3:?missing argument}
-    read -rp "${prompt}（默认为${default_value}）：" value
-    eval "${var_name}=\${value:-${default_value}}"
-}
-
-# 验证输入端口号是否被占用
-validate_port() {
-    local port=${1:?missing argument}
-    while true; do
-        if netstat -ant | grep -q ":${port} "; then
-            echo "端口已被占用，请重新输入" >&2
-        elif ! [[ $port =~ ^[0-9]+$ ]]; then
-            echo "端口必须为数字，请重新输入" >&2
-        else
-            break # 跳出循环
-        fi
-        read -rp "请输入端口号：" port
-    done
-    echo "$port"
-}
-
-# 验证输入是否为空
-validate_input() {
-    local value=${1:?missing argument}
-    while [[ -z $value ]]; do
-        echo "输入不能为空，请重新输入" >&2
-        read -rp "请输入值：" value
-        continue
-    done
-    echo "$value"
-}
-
 #download sing-box  binary
 download_sing-box() {
     LOGD "开始下载sing-box..."
@@ -374,9 +372,6 @@ download_sing-box() {
     fi
 }
 # 拉取配置文件
-# $1: 配置文件 URL
-# $2: 配置文件名
-# $3: 存储路径
 download_config() {
     local config_url="$1"
     local config_file="$2"
@@ -509,7 +504,7 @@ choose_procotol() {
     4) install_naive && insert_naive && show_naive ;;
     5) install_vlessws && insert_vlessws && show_vlessws ;;
     6) install_tuic && insert_tuic && show_tuic ;;
-    7) install_hysteria && insert_hysteria && show_hysteria ;;
+    7) install_hysteria && show_hysteria ;;
     *) exit 1 ;;
     esac
 }
@@ -811,14 +806,19 @@ show_merge(){
 
 # hysteria入站安装
 install_hysteria() {
-    #清除hysteria端口跳跃
+    local hysteria_dir="${CONFIG_FILE_PATH}/hysteria"
+    local hysteria_inbounds="${hysteria_dir}/hysteria_inbounds.json"
+    local hysteria_outbounds="${hysteria_dir}/hysteria_outbounds.json"
+    local default_hysteria_port=8443
+
+    # 清除hysteria端口跳跃
     clear_iptables
-    #创建hysteria
-    mkdir -p "${CONFIG_FILE_PATH}/hysteria"
+    # 创建hysteria目录
+    mkdir -p "$hysteria_dir"
     # hysteria安装
     show_notice "下面开始安装超级快的hysteria协议"
     # 设置默认值为8443
-    set_default_value hysteria_port ${1:-8443} "请输入hysteria的端口号"
+    set_default_value hysteria_port ${1:-$default_hysteria_port} "请输入hysteria的端口号"
     # 验证端口是否被占用并设置端口
     hysteria_port=$(validate_port "$hysteria_port")
     BLUE "你的hysteria端口号：$hysteria_port"
@@ -828,172 +828,176 @@ install_hysteria() {
     # 读取输入的hysteria-混淆
     set_default_value hysteria_obfs $(${BINARY_FILE_PATH} generate uuid) "请输入混淆"
     BLUE "obfs为：$hysteria_obfs"
-    # 调用函数并将输出赋值给变量
-    # 开启端口跳跃默认为20000-50000
-    # IPv4
+    
+    # 开启端口跳跃
     if confirm "是否开启端口跳跃（缓解qqos和端口封锁）" "y" ; then
-        iptables -t nat -A PREROUTING -i eth0 -p udp --dport 20000:50000 -j DNAT --to-destination :$((hysteria_port))
+        iptables -t nat -A PREROUTING -i eth0 -p udp --dport 20000:50000 -j DNAT --to-destination :$hysteria_port
     else
         echo "不开启端口跳跃"
     fi
-    
 
     read -r hysteria_domain hysteria_key hysteria_cert <<<"$(get_cert_info)"
 
-    cat <<EOF >${CONFIG_FILE_PATH}/hysteria/hysteria_inbounds.json
+    cat <<EOF >"$hysteria_inbounds"
 {
     "inbounds": [
-    {
-    "type": "hysteria",
-    "tag": "hysteria-in",
-
-    "sniff": true,
-    "sniff_override_destination": true,
-
-    "listen": "::",
-    "listen_port": $((hysteria_port)),
-    "up_mbps": 100,
-    "down_mbps": 100,
-    "obfs": "${hysteria_obfs}",
-    "users": [
         {
-            "auth_str": "${hysteria_auth}"
+            "type": "hysteria",
+            "tag": "hysteria-in",
+            "sniff": true,
+            "sniff_override_destination": true,
+            "listen": "::",
+            "listen_port": $hysteria_port,
+            "up_mbps": 100,
+            "down_mbps": 100,
+            "obfs": "$hysteria_obfs",
+            "users": [
+                {
+                    "auth_str": "$hysteria_auth"
+                }
+            ],
+            "tls": {
+                "enabled": true,
+                "alpn": [
+                    "h3"
+                ],
+                "server_name": "$hysteria_domain",
+                "certificate_path": "$hysteria_cert",
+                "key_path": "$hysteria_key"
+            }
         }
-    ],
-    "tls": {
-        "enabled": true,
-        "alpn": [
-            "h3"
-        ],
-        "server_name": "${hysteria_domain}",
-        "certificate_path": "${hysteria_cert}",
-        "key_path": "${hysteria_key}"
-    }
+    ]
 }
-]}
-
 EOF
 
-    cat <<EOF >${CONFIG_FILE_PATH}/hysteria/hysteria_outbounds.json
+    cat <<EOF >"$hysteria_outbounds"
 {
-    "outbounds":[
-    {
-        "tag": "select",
-        "type": "selector",
-        "default": "urltest",
-        "outbounds": [
-            "urltest",
-            "hysteria"
-        ]
-    },
-    {
-        "type": "hysteria",
-        "tag": "hysteria",
-        "server": "${hysteria_domain}",
-        "server_port": ${2:-$((hysteria_port))},
-        "up_mbps": 50,
-        "down_mbps": 100,
-        "auth_str": "${hysteria_auth}",
-        "obfs": "${hysteria_obfs}",
-        "tls": {
-            "enabled": true,
-            "server_name": "${hysteria_domain}",
-            "alpn": [
-                "h3"
+    "outbounds": [
+        {
+            "tag": "select",
+            "type": "selector",
+            "default": "urltest",
+            "outbounds": [
+                "urltest",
+                "hysteria"
+            ]
+        },
+        {
+            "type": "hysteria",
+            "tag": "hysteria",
+            "server": "$hysteria_domain",
+            "server_port": ${2:-$hysteria_port},
+            "up_mbps": 50,
+            "down_mbps": 100,
+            "auth_str": "$hysteria_auth",
+            "obfs": "$hysteria_obfs",
+            "tls": {
+                "enabled": true,
+                "server_name": "$hysteria_domain",
+                "alpn": [
+                    "h3"
+                ]
+            }
+        },
+        {
+            "tag": "direct",
+            "type": "direct"
+        },
+        {
+            "tag": "block",
+            "type": "block"
+        },
+        {
+            "tag": "dns-out",
+            "type": "dns"
+        },
+        {
+            "tag": "urltest",
+            "type": "urltest",
+            "outbounds": [
+                "hysteria"
             ]
         }
-    },
-    {
-        "tag": "direct",
-        "type": "direct"
-    },
-    {
-        "tag": "block",
-        "type": "block"
-    },
-    {
-        "tag": "dns-out",
-        "type": "dns"
-    },
-    {
-        "tag": "urltest",
-        "type": "urltest",
-        "outbounds": [
-            "hysteria"
-        ]
-    }
-]
+    ]
 }
-
 EOF
 
+    # 调用函数将 hysteriaJson 文件的内容插入到 config.json 的 "inbounds" 数组中
+    insert_json_data "$hysteria_inbounds" "${CONFIG_FILE_PATH}/config.json" "inbounds"
+    
+    if [ $# -eq 0 ]; then
+        # 调用函数将 hysteriaJson 文件的内容插入到 config.json 的 "outbounds" 数组中
+        download_config "${REMOTE_CLIENT_URL}" "hysteria_client.json" "${CLIENT_FILE_PATH}"
+        insert_json_data "$hysteria_outbounds" "${CLIENT_FILE_PATH}/hysteria_client.json" "outbounds"
+    fi
 }
 
-insert_hysteria() {
-    # 调用函数将 hysteriaJson 文件的内容插入到 config.json 的 "inbounds" 数组中
-    insert_json_data ${CONFIG_FILE_PATH}/hysteria/hysteria_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
-    # 调用函数将 hysteriaJson 文件的内容插入到 config.json 的 "outbounds" 数组中
-    download_config "${REMOTE_CLIENT_URL}" "hysteria_client.json" "${CLIENT_FILE_PATH}"
-    insert_json_data ${CONFIG_FILE_PATH}/hysteria/hysteria_outbounds.json ${CLIENT_FILE_PATH}/hysteria_client.json "outbounds"
-}
+
 
 # 查看hysteria客户端信息
 show_hysteria() {
     # 读取 JSON 文件的特定字段值
-    HYSTERIA_OUTBOUNDS_FILE="${CONFIG_FILE_PATH}/hysteria/hysteria_outbounds.json"
-    if [ -f "$HYSTERIA_OUTBOUNDS_FILE" ]; then
-        hysteria_port=$(jq -r '.outbounds[1].server_port' "$HYSTERIA_OUTBOUNDS_FILE")
-        hysteria_obfs=$(jq -r '.outbounds[1].obfs' "$HYSTERIA_OUTBOUNDS_FILE")
-        hysteria_auth=$(jq -r '.outbounds[1].auth_str' "$HYSTERIA_OUTBOUNDS_FILE")
-        hysteria_domain=$(jq -r '.outbounds[1].tls.server_name' "$HYSTERIA_OUTBOUNDS_FILE")
-        show_notice "hysteria通用格式"
-        BLUE "地址：${hysteria_domain}"
-        BLUE "端口：$((hysteria_port))"
-        BLUE "端口跳跃20000-50000"
-        BLUE "密码auth：${hysteria_auth}"
-        BLUE "混淆obfs：${hysteria_obfs}"
-        show_notice "hysteria-sing-box配置"
-        cat "${CLIENT_FILE_PATH}/hysteria_client.json"
-        show_notice "hysteria-clash-meta配置文件"
+    hysteria_outbounds_file="${CONFIG_FILE_PATH}/hysteria/hysteria_outbounds.json"
+    if [ -f "$hysteria_outbounds_file" ]; then
+        hysteria_port=$(jq -r '.outbounds[1].server_port' "$hysteria_outbounds_file")
+        hysteria_obfs=$(jq -r '.outbounds[1].obfs' "$hysteria_outbounds_file")
+        hysteria_auth=$(jq -r '.outbounds[1].auth_str' "$hysteria_outbounds_file")
+        hysteria_domain=$(jq -r '.outbounds[1].tls.server_name' "$hysteria_outbounds_file")
+        
+        cat <<EOF
+hysteria通用格式:
+  地址: ${hysteria_domain}
+  端口: $((hysteria_port))
+  端口跳跃: 20000-50000
+  密码auth: ${hysteria_auth}
+  混淆obfs: ${hysteria_obfs}
 
-        BLUE "proxies:"
-        BLUE "  - name: hysteria"
-        BLUE "    type: hysteria"
-        BLUE "    server: ${hysteria_domain}"
-        BLUE "    port: $((hysteria_port))"
-        BLUE "    # ports: 1000,2000-3000,4000 # port 不可省略"
-        BLUE "    ports: 20000-50000 # port 不可省略"
-        BLUE "    auth_str: ${hysteria_auth}"
-        BLUE "    auth-str: ${hysteria_auth}"
-        BLUE "    obfs: ${hysteria_obfs}"
-        BLUE "    alpn:"
-        BLUE "      - h3"
-        BLUE "    protocol: udp # 支持 udp/wechat-video/faketcp"
-        BLUE "    up: \"100 Mbps\" # 若不写单位,默认为 Mbps"
-        BLUE "    down: \"100 Mbps\" # 若不写单位,默认为 Mbps"
+hysteria-sing-box配置:
+$(cat "${CLIENT_FILE_PATH}/hysteria_client.json")
+
+hysteria-clash-meta配置文件:
+proxies:
+  - name: hysteria
+    type: hysteria
+    server: ${hysteria_domain}
+    port: $((hysteria_port))
+    # ports: 1000,2000-3000,4000 # port 不可省略
+    ports: 20000-50000 # port 不可省略
+    auth_str: ${hysteria_auth}
+    auth-str: ${hysteria_auth}
+    obfs: ${hysteria_obfs}
+    alpn:
+      - h3
+    protocol: udp # 支持 udp/wechat-video/faketcp
+    up: "100 Mbps" # 若不写单位,默认为 Mbps
+    down: "100 Mbps" # 若不写单位,默认为 Mbps
+EOF
     fi
-
-
 }
+
 #清除端口跳跃
 clear_iptables(){
         # 读取 JSON 文件的特定字段值
-    HYSTERIA_OUTBOUNDS_FILE="${CONFIG_FILE_PATH}/hysteria/hysteria_outbounds.json"
-    if [ -f "$HYSTERIA_OUTBOUNDS_FILE" ]; then
-        hysteria_port=$(jq -r '.outbounds[1].server_port' "$HYSTERIA_OUTBOUNDS_FILE")
+    hysteria_outbounds_file="${CONFIG_FILE_PATH}/hysteria/hysteria_outbounds.json"
+    if [ -f "$hysteria_outbounds_file" ]; then
+        hysteria_port=$(jq -r '.outbounds[1].server_port' "$hysteria_outbounds_file")
         iptables -t nat -D PREROUTING -i eth0 -p udp --dport 20000:50000 -j DNAT --to-destination :$((hysteria_port))
     fi
 
 }
 install_tuic() {
-        #清除hysteria端口跳跃
+    local tuic_dir="${CONFIG_FILE_PATH}/tuic"
+    local tuic_inbounds="${tuic_dir}/tuic_inbounds.json"
+    local tuic_outbounds="${tuic_dir}/tuic_outbounds.json"
+    local default_tuic_port=8443
+    #清除hysteria端口跳跃
     clear_iptables
     #创建tuic
     mkdir -p "${CONFIG_FILE_PATH}/tuic"
 
     show_notice "开始安装和前男友一样温柔的tuic"
     # 设置默认值为8443
-    set_default_value tuic_port ${1:-8443} "请输入tuic的端口号"
+    set_default_value tuic_port ${1:-$default_tuic_port} "请输入tuic的端口号"
     # 验证端口是否被占用
     tuic_port=$(validate_port "$tuic_port")
     BLUE "你的tuic端口号：$tuic_port"
@@ -1086,35 +1090,40 @@ EOF
     ]}
 
 EOF
+        # 调用函数将 tuicJson 文件的内容插入到 config.json 的 "inbounds" 数组中
+    insert_json_data "$tuic_inbounds" "${CONFIG_FILE_PATH}/config.json" "inbounds"
+    
+    if [ $# -eq 0 ]; then
+        # 调用函数将 tuicJson 文件的内容插入到 config.json 的 "outbounds" 数组中
+        download_config "${REMOTE_CLIENT_URL}" "tuic_client.json" "${CLIENT_FILE_PATH}"
+        insert_json_data "$tuic_outbounds" "${CLIENT_FILE_PATH}/tuic_client.json" "outbounds"
+    fi
+}
 
-}
-insert_tuic() {
-    insert_json_data ${CONFIG_FILE_PATH}/tuic/tuic_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
-    download_config "${REMOTE_CLIENT_URL}" "tuic_client.json" "${CLIENT_FILE_PATH}"
-    insert_json_data ${CONFIG_FILE_PATH}/tuic/tuic_outbounds.json ${CLIENT_FILE_PATH}/tuic_client.json "outbounds"
-}
 # 查看tuic客户端信息
 show_tuic() {
-    # 读取 JSON 文件的特定字段值
-    TUIC_OUTBOUNDS_FILE="${CONFIG_FILE_PATH}/tuic/tuic_outbounds.json"
-    if [ -f "$TUIC_OUTBOUNDS_FILE" ]; then
-        tuic_port=$(jq -r '.outbounds[1].server_port' "$TUIC_OUTBOUNDS_FILE")
-        tuic_uuid=$(jq -r '.outbounds[1].uuid' "$TUIC_OUTBOUNDS_FILE")
-        tuic_password=$(jq -r '.outbounds[1].password' "$TUIC_OUTBOUNDS_FILE")
-        tuic_domain=$(jq -r '.outbounds[1].tls.server_name' "$TUIC_OUTBOUNDS_FILE")
-        show_notice "tuic通用格式"
-        BLUE "地址：${tuic_domain}"
-        BLUE "端口：$((tuic_port))"
-        BLUE "uuid：${tuic_auth}"
-        BLUE "password：${tuic_obfs}"
-        BLUE "alpn: h3"
-        BLUE "congestion-controller：bbr"
-        BLUE "udp-relay-mode: native"
-        show_notice "sing-box配置"
-        cat "${CLIENT_FILE_PATH}/tuic_client.json"
-        show_notice "clash-meta配置文件"
-        tuic_clash=$(
+    # Read specific field values from JSON file
+    tuic_outbounds_file="${CONFIG_FILE_PATH}/tuic/tuic_outbounds.json"
+    if [ -f "$tuic_outbounds_file" ]; then
+        tuic_port=$(jq -r '.outbounds[1].server_port' "$tuic_outbounds_file")
+        tuic_uuid=$(jq -r '.outbounds[1].uuid' "$tuic_outbounds_file")
+        tuic_password=$(jq -r '.outbounds[1].password' "$tuic_outbounds_file")
+        tuic_domain=$(jq -r '.outbounds[1].tls.server_name' "$tuic_outbounds_file")
+
         cat <<EOF
+tuic通用格式:
+  地址: ${tuic_domain}
+  端口: $((tuic_port))
+  uuid: ${tuic_uuid}
+  password: ${tuic_password}
+  alpn: h3
+  拥塞控制器: bbr
+  udp-relay-mode: native
+
+tuic-sing-box配置:
+$(cat "${CLIENT_FILE_PATH}/tuic_client.json")
+
+tuic-clash-meta配置文件:
 proxies:
   - name: tuic
     server: \${tuic_domain}
@@ -1129,17 +1138,13 @@ proxies:
     udp-relay-mode: native
     congestion-controller: bbr
 EOF
-    )
-
-    echo "$tuic_clash"
     fi
-
-
-
 }
 
+
 install_naive() {
-        #清除hysteria端口跳跃
+    
+    #清除hysteria端口跳跃
     clear_iptables
     #创建naive
     mkdir -p "${CONFIG_FILE_PATH}/naive"
@@ -1194,10 +1199,10 @@ EOF
         "proxy": "https://'${naive_username}':'${naive_pwd}'@'${naive_domain}':'${naive_port}'"
     }' | tee "${CLIENT_FILE_PATH}/naive.json"
     show_notice "安装完成"
-}
-insert_naive() {
     insert_json_data ${CONFIG_FILE_PATH}/naive/naive_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
-}
+
+}   
+
 show_naive() {
 
     if [ -f "${CONFIG_FILE_PATH}/naive.json" ]; then
@@ -1214,9 +1219,13 @@ show_naive() {
 }
 
 install_vlessws() {
-        #清除hysteria端口跳跃
+    local vlessws_dir="${CONFIG_FILE_PATH}/vlessws"
+    local vlessws_inbounds="${vlessws_dir}/vlessws_inbounds.json"
+    local vlessws_outbounds="${vlessws_dir}/vlessws_outbounds.json"
+    local default_vlessws_port=443
+    #清除hysteria端口跳跃
     clear_iptables
-    mkdir -p ${CONFIG_FILE_PATH}/vlessws
+    mkdir -p ${vlessws_dir}
 
     show_notice "开始安装准备淘汰了的协议了vless ws tls"
     # 设置默认值为443
@@ -1328,16 +1337,18 @@ EOF
 }
 
 EOF
-
-}
-insert_vlessws() {
+    # 调用函数将 vlesswsJson 文件的内容插入到 config.json 的 "inbounds" 数组中
+    insert_json_data "$vlessws_inbounds" "${CONFIG_FILE_PATH}/config.json" "inbounds"
     
-    download_config "${REMOTE_CLIENT_URL}" "vlessws_client.json" "${CLIENT_FILE_PATH}"
-    insert_json_data ${CONFIG_FILE_PATH}/vlessws/vlessws_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
-    insert_json_data ${CONFIG_FILE_PATH}/vlessws/vlessws_outbounds.json ${CLIENT_FILE_PATH}/vlessws_client.json "outbounds"
+    if [ $# -eq 0 ]; then
+        # 调用函数将 vlesswsJson 文件的内容插入到 config.json 的 "outbounds" 数组中
+        download_config "${REMOTE_CLIENT_URL}" "vlessws_client.json" "${CLIENT_FILE_PATH}"
+        insert_json_data "$vlessws_outbounds" "${CLIENT_FILE_PATH}/vlessws_client.json" "outbounds"
+    fi
 }
+
 show_vlessws() {
-    # 读取 JSON 文件的特定字段值
+    # Read specific field values from JSON file
     VLESSWS_OUTBOUNDS_FILE="${CONFIG_FILE_PATH}/vlessws/vlessws_outbounds.json"
     if [ -f "$VLESSWS_OUTBOUNDS_FILE" ]; then
         vlessws_port=$(jq -r '.outbounds[1].server_port' "$VLESSWS_OUTBOUNDS_FILE")
@@ -1345,34 +1356,51 @@ show_vlessws() {
         vlessws_path=$(jq -r '.outbounds[1].transport.path' "$VLESSWS_OUTBOUNDS_FILE")
         vlessws_domain=$(jq -r '.outbounds[1].tls.server_name' "$VLESSWS_OUTBOUNDS_FILE")
         wslink="${vlessws_uuid}@${vlessws_domain}:${vlessws_port}?encryption=none&security=tls&sni=${vlessws_domain}&alpn=h2%2Chttp%2F1.1&fp=chrome&type=ws&host=${vlessws_domain}&path=/${vlessws_path}#singboxvless"
-        show_notice "vless ws tls通用配置参数"
-        echo "协议：vless"
-        echo "地址：${vlessws_domain}"
-        echo "端口：$((vlessws_port))"
-        echo "UUID：${vlessws_uuid}"
-        echo "加密方式：none"
-        echo "传输协议：ws"
-        echo "路径：/${vlessws_path}"
-        echo "底层传输：tls"
-        show_notice "vless ws tls 通用链接格式"
-        echo "vless://${wslink}"
-        show_notice "sing-box配置文件"
-        cat "${CLIENT_FILE_PATH}/vlessws_client.json"
-        show_notice "vless ws tls clash-meta配置文件"
-        vlessws_clash=$(
+
         cat <<EOF
+vless ws tls通用配置参数:
+  协议: vless
+  地址: ${vlessws_domain}
+  端口: $((vlessws_port))
+  UUID: ${vlessws_uuid}
+  加密方式: none
+  传输协议: ws
+  路径: /${vlessws_path}
+  底层传输: tls
+
+vless ws tls通用链接格式:
+  vless://${wslink}
+
+vless-sing-box配置文件:
+$(cat "${CLIENT_FILE_PATH}/vlessws_client.json")
+
+vless ws tls clash-meta配置文件:
 proxies:
-  - {name: vlessws, server: ${vlessws_domain}, port: $((vlessws_port)), client-fingerprint: chrome, type: vless, uuid: $vlessws_uuid, tls: true, tfo: false, servername: $vlessws_domain, skip-cert-verify: false, network: ws, ws-opts: {path: /$vlessws_path, headers: {Host: $vlessws_domain}}}
+  - name: vlessws
+    server: ${vlessws_domain}
+    port: $((vlessws_port))
+    client-fingerprint: chrome
+    type: vless
+    uuid: ${vlessws_uuid}
+    tls: true
+    tfo: false
+    servername: ${vlessws_domain}
+    skip-cert-verify: false
+    network: ws
+    ws-opts:
+      path: /${vlessws_path}
+      headers:
+        Host: ${vlessws_domain}
 EOF
-    )
-
-        echo "$vlessws_clash"
     fi
-
 }
+
 #install shadowtls
 install_shadowtls() {
-        #清除hysteria端口跳跃
+    local shadowtls_dir="${CONFIG_FILE_PATH}/shadowtls"
+    local shadowtls_inbounds="${shadowtls_dir}/shadowtls_inbounds.json"
+    local shadowtls_outbounds="${shadowtls_dir}/shadowtls_outbounds.json"
+    local default_shadowtls_port=443
     clear_iptables
     # 客户端文件夹
     mkdir -p ${CONFIG_FILE_PATH}/shadowtls
@@ -1499,27 +1527,31 @@ EOF
 
 EOF
 
-}
-insert_shadowtls() {
+    # 调用函数将 shadowtlsJson 文件的内容插入到 config.json 的 "inbounds" 数组中
+    insert_json_data "$shadowtls_inbounds" "${CONFIG_FILE_PATH}/config.json" "inbounds"
     
-    download_config "${REMOTE_CLIENT_URL}" "shadowtls_client.json" "${CLIENT_FILE_PATH}"
-    insert_json_data ${CONFIG_FILE_PATH}/shadowtls/shadowtls_outbounds.json ${CLIENT_FILE_PATH}/shadowtls_client.json "outbounds"
-    insert_json_data ${CONFIG_FILE_PATH}/shadowtls/shadowtls_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
-}
-show_shadowtls() {
-    # 读取 JSON 文件的特定字段值
-    SHADOWTLS_OUTBOUNDS_FILE="${CONFIG_FILE_PATH}/shadowtls/shadowtls_outbounds.json"
-    if [ -f "$SHADOWTLS_OUTBOUNDS_FILE" ]; then
-        shadowtls_port=$(jq -r '.outbounds[2].server_port' "$SHADOWTLS_OUTBOUNDS_FILE")
-        shadowtls_pwd=$(jq -r '.outbounds[2].password' "$SHADOWTLS_OUTBOUNDS_FILE")
-        ss_pwd=$(jq -r '.outbounds[1].password' "$SHADOWTLS_OUTBOUNDS_FILE")
-        shadowtls_domain=$(jq -r '.outbounds[2].tls.server_name' "$SHADOWTLS_OUTBOUNDS_FILE")
+    if [ $# -eq 0 ]; then
+        # 调用函数将 shadowtlsJson 文件的内容插入到 config.json 的 "outbounds" 数组中
+        download_config "${REMOTE_CLIENT_URL}" "shadowtls_client.json" "${CLIENT_FILE_PATH}"
+        insert_json_data "$shadowtls_outbounds" "${CLIENT_FILE_PATH}/shadowtls_client.json" "outbounds"
+    fi
 
-        show_notice "shadowtls sing-box配置文件"
-        cat "${CLIENT_FILE_PATH}/shadowtls_client.json"
-        show_notice "shadowtls clash-meta配置文件"
-        shadowtls_clash=$(
+}
+
+show_shadowtls() {
+    # Read specific field values from JSON file
+    shadowtls_outbounds_file="${CONFIG_FILE_PATH}/shadowtls/shadowtls_outbounds.json"
+    if [ -f "$shadowtls_outbounds_file" ]; then
+        shadowtls_port=$(jq -r '.outbounds[2].server_port' "$shadowtls_outbounds_file")
+        shadowtls_pwd=$(jq -r '.outbounds[2].password' "$shadowtls_outbounds_file")
+        ss_pwd=$(jq -r '.outbounds[1].password' "$shadowtls_outbounds_file")
+        shadowtls_domain=$(jq -r '.outbounds[2].tls.server_name' "$shadowtls_outbounds_file")
+
         cat <<EOF
+shadowtls sing-box配置文件:
+$(cat "${CLIENT_FILE_PATH}/shadowtls_client.json")
+
+shadowtls clash-meta配置文件:
 proxies:
   - name: ShadowTLS v3
     type: ss
@@ -1534,15 +1566,15 @@ proxies:
         password: "$shadowtls_pwd"
         version: 3
 EOF
-    )
-
-        echo "$shadowtls_clash"
     fi
-
 }
 
+
 install_reality() {
-        #清除hysteria端口跳跃
+    local reality_dir="${CONFIG_FILE_PATH}/reality"
+    local reality_inbounds="${reality_dir}/reality_inbounds.json"
+    local reality_outbounds="${reality_dir}/reality_outbounds.json"
+    local default_reality_port=443
     clear_iptables
     # 创建配置文件
     mkdir -p ${CONFIG_FILE_PATH}/reality
@@ -1665,17 +1697,18 @@ EOF
 }
 
 EOF
-
-}
-insert_reality() {
+        # 调用函数将 realityJson 文件的内容插入到 config.json 的 "inbounds" 数组中
+    insert_json_data "$reality_inbounds" "${CONFIG_FILE_PATH}/config.json" "inbounds"
     
-    download_config "${REMOTE_CLIENT_URL}" "reality_client.json" "${CLIENT_FILE_PATH}"
-    insert_json_data ${CONFIG_FILE_PATH}/reality/reality_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
-    insert_json_data ${CONFIG_FILE_PATH}/reality/reality_outbounds.json ${CLIENT_FILE_PATH}/reality_client.json "outbounds"
+    if [ $# -eq 0 ]; then
+        # 调用函数将 realityJson 文件的内容插入到 config.json 的 "outbounds" 数组中
+        download_config "${REMOTE_CLIENT_URL}" "reality_client.json" "${CLIENT_FILE_PATH}"
+        insert_json_data "$reality_outbounds" "${CLIENT_FILE_PATH}/reality_client.json" "outbounds"
+    fi
 }
-show_reality() {
 
-    # 读取 JSON 文件的特定字段值
+show_reality() {
+    # Read specific field values from JSON file
     REALITY_OUTBOUNDS_FILE="${CONFIG_FILE_PATH}/reality/reality_outbounds.json"
     if [ -f "$REALITY_OUTBOUNDS_FILE" ]; then
         reality_port=$(jq -r '.outbounds[1].server_port' "$REALITY_OUTBOUNDS_FILE")
@@ -1683,11 +1716,7 @@ show_reality() {
         reality_public_key=$(jq -r '.outbounds[1].tls.reality.public_key' "$REALITY_OUTBOUNDS_FILE")
         reality_shortid=$(jq -r '.outbounds[1].tls.reality.short_id' "$REALITY_OUTBOUNDS_FILE")
         reality_domain=$(jq -r '.outbounds[1].tls.server_name' "$REALITY_OUTBOUNDS_FILE")
-
-        show_notice "reality sing-box配置文件"
-        cat "${CLIENT_FILE_PATH}/reality_client.json"
-        show_notice "reality clash-meta配置文件"
-        reality_clash=$(
+        link="${reality_uuid}@$(getIp):$((reality_port))?security=reality&flow=xtls-rprx-vision&fp=chrome&pbk=${reality_public_key}&sni=${reality_domain}&spx=%2F&sid=${reality_shortid}#VLESS-XTLS-uTLS-REALITY"
         cat <<EOF
 proxies:
   - name: reality
@@ -1705,27 +1734,23 @@ proxies:
         public-key: ${reality_public_key}
         short-id: ${reality_shortid}
 
+
+reality通用配置参数:
+  地址: $(getIp)
+  端口: ${reality_port}
+  uuid: ${reality_uuid}
+  TLS: true
+  xtls: xtls-rprx-vision
+  sni: ${reality_domain}
+  publickey: ${reality_public_key}
+  shortid: ${reality_shortid}
+
+reality通用链接格式:
+  vless://${link}
 EOF
-    )
-        echo "$reality_clash"
-        link="${reality_uuid}@$(getIp):$((reality_port))?security=reality&flow=xtls-rprx-vision&fp=chrome&pbk=${reality_public_key}&sni=${reality_domain}&spx=%2F&sid=${reality_shortid}#VLESS-XTLS-uTLS-REALITY"
-
-        show_notice "reality通用配置参数"
-        PINK "地址：$(getIp)"
-        PINK "端口：${reality_port}"
-        PINK "uuid：${reality_uuid}"
-        PINK "TLS：true"
-        PINK "xtls：xtls-rprx-vision"
-        PINK "sni：${reality_domain}"
-        PINK "publickey：${reality_public_key}"
-        PINK "shortid：${reality_shortid}"
-
-        show_notice "reality通用链接格式"
-        PINK "vless://${link}"
     fi
-
-
 }
+
 #update sing-box
 update_sing-box() {
     LOGD "开始更新sing-box..."
