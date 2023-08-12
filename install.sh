@@ -499,11 +499,11 @@ choose_procotol() {
     read -rp "请输入选项 [0-7]: " menuChoice
     case $menuChoice in
     1) install_merge && show_merge ;;
-    2) install_reality && insert_reality && show_reality ;;
-    3) install_shadowtls && insert_shadowtls && show_shadowtls ;;
-    4) install_naive && insert_naive && show_naive ;;
-    5) install_vlessws && insert_vlessws && show_vlessws ;;
-    6) install_tuic && insert_tuic && show_tuic ;;
+    2) install_reality  && show_reality ;;
+    3) install_shadowtls  && show_shadowtls ;;
+    4) install_naive  && show_naive ;;
+    5) install_vlessws  && show_vlessws ;;
+    6) install_tuic  && show_tuic ;;
     7) install_hysteria && show_hysteria ;;
     *) exit 1 ;;
     esac
@@ -614,10 +614,7 @@ install_merge() {
     install_reality 18443 $((shadowtls_port))
     install_vlessws 17443 $((shadowtls_port))
     install_hysteria 8848
-    insert_json_data ${CONFIG_FILE_PATH}/shadowtls/shadowtls_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
-    insert_json_data ${CONFIG_FILE_PATH}/reality/reality_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
-    insert_json_data ${CONFIG_FILE_PATH}/vlessws/vlessws_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
-    insert_json_data ${CONFIG_FILE_PATH}/hysteria/hysteria_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
+
     
     set_default_value your_site_domain "www.domain.com" "请输入你自己的网站SNI分流"
     BLUE "网站域名：$your_site_domain"
@@ -806,10 +803,10 @@ show_merge(){
 
 # hysteria入站安装
 install_hysteria() {
-    local hysteria_dir="${CONFIG_FILE_PATH}/hysteria"
-    local hysteria_inbounds="${hysteria_dir}/hysteria_inbounds.json"
-    local hysteria_outbounds="${hysteria_dir}/hysteria_outbounds.json"
-    local default_hysteria_port=8443
+    hysteria_dir="${CONFIG_FILE_PATH}/hysteria"
+    hysteria_inbounds="${hysteria_dir}/hysteria_inbounds.json"
+    hysteria_outbounds="${hysteria_dir}/hysteria_outbounds.json"
+    default_hysteria_port=8443
 
     # 清除hysteria端口跳跃
     clear_iptables
@@ -936,6 +933,7 @@ EOF
 
 # 查看hysteria客户端信息
 show_hysteria() {
+    show_notice "hysteria客户端信息"
     # 读取 JSON 文件的特定字段值
     hysteria_outbounds_file="${CONFIG_FILE_PATH}/hysteria/hysteria_outbounds.json"
     if [ -f "$hysteria_outbounds_file" ]; then
@@ -945,17 +943,17 @@ show_hysteria() {
         hysteria_domain=$(jq -r '.outbounds[1].tls.server_name' "$hysteria_outbounds_file")
         
         cat <<EOF
-hysteria通用格式:
+${yellow}=========================hysteria通用格式:===================================${plain}
   地址: ${hysteria_domain}
   端口: $((hysteria_port))
   端口跳跃: 20000-50000
   密码auth: ${hysteria_auth}
   混淆obfs: ${hysteria_obfs}
 
-hysteria-sing-box配置:
+${yellow}=========================hysteria-sing-box配置:===================================${plain}
 $(cat "${CLIENT_FILE_PATH}/hysteria_client.json")
 
-hysteria-clash-meta配置文件:
+${yellow}=========================hysteria-clash-meta配置文件:===================================${plain}
 proxies:
   - name: hysteria
     type: hysteria
@@ -986,10 +984,10 @@ clear_iptables(){
 
 }
 install_tuic() {
-    local tuic_dir="${CONFIG_FILE_PATH}/tuic"
-    local tuic_inbounds="${tuic_dir}/tuic_inbounds.json"
-    local tuic_outbounds="${tuic_dir}/tuic_outbounds.json"
-    local default_tuic_port=8443
+    tuic_dir="${CONFIG_FILE_PATH}/tuic"
+    tuic_inbounds="${tuic_dir}/tuic_inbounds.json"
+    tuic_outbounds="${tuic_dir}/tuic_outbounds.json"
+    default_tuic_port=8443
     #清除hysteria端口跳跃
     clear_iptables
     #创建tuic
@@ -1102,6 +1100,7 @@ EOF
 
 # 查看tuic客户端信息
 show_tuic() {
+    show_notice "tuic客户端信息"
     # Read specific field values from JSON file
     tuic_outbounds_file="${CONFIG_FILE_PATH}/tuic/tuic_outbounds.json"
     if [ -f "$tuic_outbounds_file" ]; then
@@ -1111,7 +1110,7 @@ show_tuic() {
         tuic_domain=$(jq -r '.outbounds[1].tls.server_name' "$tuic_outbounds_file")
 
         cat <<EOF
-tuic通用格式:
+${yellow}=========================tuic通用格式:=========================${plain}
   地址: ${tuic_domain}
   端口: $((tuic_port))
   uuid: ${tuic_uuid}
@@ -1120,10 +1119,10 @@ tuic通用格式:
   拥塞控制器: bbr
   udp-relay-mode: native
 
-tuic-sing-box配置:
+${yellow}=========================tuic-sing-box配置:=========================${plain}
 $(cat "${CLIENT_FILE_PATH}/tuic_client.json")
 
-tuic-clash-meta配置文件:
+${yellow}=========================tuic-clash-meta配置文件:=========================${plain}
 proxies:
   - name: tuic
     server: \${tuic_domain}
@@ -1206,6 +1205,7 @@ EOF
 show_naive() {
 
     if [ -f "${CONFIG_FILE_PATH}/naive.json" ]; then
+        
         show_notice "naiveproxy配置文件"
         echo ""
         echo -e "${red}！！！注意 naive没有sing-box出站，请使用naive自己的客户端${plain}"
@@ -1219,10 +1219,10 @@ show_naive() {
 }
 
 install_vlessws() {
-    local vlessws_dir="${CONFIG_FILE_PATH}/vlessws"
-    local vlessws_inbounds="${vlessws_dir}/vlessws_inbounds.json"
-    local vlessws_outbounds="${vlessws_dir}/vlessws_outbounds.json"
-    local default_vlessws_port=443
+    vlessws_dir="${CONFIG_FILE_PATH}/vlessws"
+    vlessws_inbounds="${vlessws_dir}/vlessws_inbounds.json"
+    vlessws_outbounds="${vlessws_dir}/vlessws_outbounds.json"
+    default_vlessws_port=443
     #清除hysteria端口跳跃
     clear_iptables
     mkdir -p ${vlessws_dir}
@@ -1348,17 +1348,18 @@ EOF
 }
 
 show_vlessws() {
+    show_notice "vless ws tls客户端信息"
     # Read specific field values from JSON file
-    VLESSWS_OUTBOUNDS_FILE="${CONFIG_FILE_PATH}/vlessws/vlessws_outbounds.json"
-    if [ -f "$VLESSWS_OUTBOUNDS_FILE" ]; then
-        vlessws_port=$(jq -r '.outbounds[1].server_port' "$VLESSWS_OUTBOUNDS_FILE")
-        vlessws_uuid=$(jq -r '.outbounds[1].uuid' "$VLESSWS_OUTBOUNDS_FILE")
-        vlessws_path=$(jq -r '.outbounds[1].transport.path' "$VLESSWS_OUTBOUNDS_FILE")
-        vlessws_domain=$(jq -r '.outbounds[1].tls.server_name' "$VLESSWS_OUTBOUNDS_FILE")
+    vlessws_outbounds_file="${CONFIG_FILE_PATH}/vlessws/vlessws_outbounds.json"
+    if [ -f "$vlessws_outbounds_file" ]; then
+        vlessws_port=$(jq -r '.outbounds[1].server_port' "$vlessws_outbounds_file")
+        vlessws_uuid=$(jq -r '.outbounds[1].uuid' "$vlessws_outbounds_file")
+        vlessws_path=$(jq -r '.outbounds[1].transport.path' "$vlessws_outbounds_file")
+        vlessws_domain=$(jq -r '.outbounds[1].tls.server_name' "$vlessws_outbounds_file")
         wslink="${vlessws_uuid}@${vlessws_domain}:${vlessws_port}?encryption=none&security=tls&sni=${vlessws_domain}&alpn=h2%2Chttp%2F1.1&fp=chrome&type=ws&host=${vlessws_domain}&path=/${vlessws_path}#singboxvless"
 
         cat <<EOF
-vless ws tls通用配置参数:
+${yellow}================================vless ws tls通用配置参数:===========================${plain}
   协议: vless
   地址: ${vlessws_domain}
   端口: $((vlessws_port))
@@ -1368,13 +1369,13 @@ vless ws tls通用配置参数:
   路径: /${vlessws_path}
   底层传输: tls
 
-vless ws tls通用链接格式:
+${yellow}================================vless ws tls通用链接格式:===========================${plain}
   vless://${wslink}
 
-vless-sing-box配置文件:
+${yellow}================================vless-sing-box配置文件:===========================${plain}
 $(cat "${CLIENT_FILE_PATH}/vlessws_client.json")
 
-vless ws tls clash-meta配置文件:
+${yellow}================================vless ws tls clash-meta配置文件:===========================${plain}
 proxies:
   - name: vlessws
     server: ${vlessws_domain}
@@ -1397,10 +1398,10 @@ EOF
 
 #install shadowtls
 install_shadowtls() {
-    local shadowtls_dir="${CONFIG_FILE_PATH}/shadowtls"
-    local shadowtls_inbounds="${shadowtls_dir}/shadowtls_inbounds.json"
-    local shadowtls_outbounds="${shadowtls_dir}/shadowtls_outbounds.json"
-    local default_shadowtls_port=443
+    shadowtls_dir="${CONFIG_FILE_PATH}/shadowtls"
+    shadowtls_inbounds="${shadowtls_dir}/shadowtls_inbounds.json"
+    shadowtls_outbounds="${shadowtls_dir}/shadowtls_outbounds.json"
+    default_shadowtls_port=443
     clear_iptables
     # 客户端文件夹
     mkdir -p ${CONFIG_FILE_PATH}/shadowtls
@@ -1539,6 +1540,7 @@ EOF
 }
 
 show_shadowtls() {
+    show_notice "shadowtls客户端信息"
     # Read specific field values from JSON file
     shadowtls_outbounds_file="${CONFIG_FILE_PATH}/shadowtls/shadowtls_outbounds.json"
     if [ -f "$shadowtls_outbounds_file" ]; then
@@ -1548,10 +1550,10 @@ show_shadowtls() {
         shadowtls_domain=$(jq -r '.outbounds[2].tls.server_name' "$shadowtls_outbounds_file")
 
         cat <<EOF
-shadowtls sing-box配置文件:
+${yellow}================================shadowtls sing-box配置文件:==============================${plain}
 $(cat "${CLIENT_FILE_PATH}/shadowtls_client.json")
 
-shadowtls clash-meta配置文件:
+${yellow}================================shadowtls clash-meta配置文件:==============================${plain}
 proxies:
   - name: ShadowTLS v3
     type: ss
@@ -1571,10 +1573,10 @@ EOF
 
 
 install_reality() {
-    local reality_dir="${CONFIG_FILE_PATH}/reality"
-    local reality_inbounds="${reality_dir}/reality_inbounds.json"
-    local reality_outbounds="${reality_dir}/reality_outbounds.json"
-    local default_reality_port=443
+    reality_dir="${CONFIG_FILE_PATH}/reality"
+    reality_inbounds="${reality_dir}/reality_inbounds.json"
+    reality_outbounds="${reality_dir}/reality_outbounds.json"
+    default_reality_port=443
     clear_iptables
     # 创建配置文件
     mkdir -p ${CONFIG_FILE_PATH}/reality
@@ -1709,15 +1711,16 @@ EOF
 
 show_reality() {
     # Read specific field values from JSON file
-    REALITY_OUTBOUNDS_FILE="${CONFIG_FILE_PATH}/reality/reality_outbounds.json"
-    if [ -f "$REALITY_OUTBOUNDS_FILE" ]; then
-        reality_port=$(jq -r '.outbounds[1].server_port' "$REALITY_OUTBOUNDS_FILE")
-        reality_uuid=$(jq -r '.outbounds[1].uuid' "$REALITY_OUTBOUNDS_FILE")
-        reality_public_key=$(jq -r '.outbounds[1].tls.reality.public_key' "$REALITY_OUTBOUNDS_FILE")
-        reality_shortid=$(jq -r '.outbounds[1].tls.reality.short_id' "$REALITY_OUTBOUNDS_FILE")
-        reality_domain=$(jq -r '.outbounds[1].tls.server_name' "$REALITY_OUTBOUNDS_FILE")
+    reality_outbounds_file="${CONFIG_FILE_PATH}/reality/reality_outbounds.json"
+    if [ -f "$reality_outbounds_file" ]; then
+        reality_port=$(jq -r '.outbounds[1].server_port' "$reality_outbounds_file")
+        reality_uuid=$(jq -r '.outbounds[1].uuid' "$reality_outbounds_file")
+        reality_public_key=$(jq -r '.outbounds[1].tls.reality.public_key' "$reality_outbounds_file")
+        reality_shortid=$(jq -r '.outbounds[1].tls.reality.short_id' "$reality_outbounds_file")
+        reality_domain=$(jq -r '.outbounds[1].tls.server_name' "$reality_outbounds_file")
         link="${reality_uuid}@$(getIp):$((reality_port))?security=reality&flow=xtls-rprx-vision&fp=chrome&pbk=${reality_public_key}&sni=${reality_domain}&spx=%2F&sid=${reality_shortid}#VLESS-XTLS-uTLS-REALITY"
         cat <<EOF
+${yellow}================================reality clash-meta配置参数:==========================${plain}
 proxies:
   - name: reality
     type: vless
@@ -1735,7 +1738,7 @@ proxies:
         short-id: ${reality_shortid}
 
 
-reality通用配置参数:
+${yellow}================================reality通用配置参数:==========================${plain}
   地址: $(getIp)
   端口: ${reality_port}
   uuid: ${reality_uuid}
@@ -1745,7 +1748,7 @@ reality通用配置参数:
   publickey: ${reality_public_key}
   shortid: ${reality_shortid}
 
-reality通用链接格式:
+${yellow}================================reality通用链接格式:==========================${plain}
   vless://${link}
 EOF
     fi
