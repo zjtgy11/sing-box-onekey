@@ -823,10 +823,10 @@ install_hysteria() {
     hysteria_port=$(validate_port "$hysteria_port")
     BLUE "你的hysteria端口号：$hysteria_port"
     # 读取输入的hysteria-auth
-    set_default_value hysteria_auth $(${BINARY_FILE_PATH} generate uuid) "请输入密码"
+    set_default_value hysteria_auth "masheep" "请输入密码"
     BLUE "auth为：$hysteria_auth"
     # 读取输入的hysteria-混淆
-    set_default_value hysteria_obfs $(${BINARY_FILE_PATH} generate uuid) "请输入混淆"
+    set_default_value hysteria_obfs "masheep" "请输入混淆"
     BLUE "obfs为：$hysteria_obfs"
     # 调用函数并将输出赋值给变量
     # 开启端口跳跃默认为20000-50000
