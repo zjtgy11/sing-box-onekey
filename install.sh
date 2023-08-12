@@ -618,7 +618,7 @@ install_merge() {
     install_shadowtls 443
     install_reality 18443 $((shadowtls_port))
     install_vlessws 17443 $((shadowtls_port))
-    install_hysteria 20001
+    install_hysteria 8848
     insert_json_data ${CONFIG_FILE_PATH}/shadowtls/shadowtls_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
     insert_json_data ${CONFIG_FILE_PATH}/reality/reality_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
     insert_json_data ${CONFIG_FILE_PATH}/vlessws/vlessws_inbounds.json ${CONFIG_FILE_PATH}/config.json "inbounds"
