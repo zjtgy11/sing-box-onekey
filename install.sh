@@ -943,17 +943,17 @@ show_hysteria() {
         hysteria_domain=$(jq -r '.outbounds[1].tls.server_name' "$hysteria_outbounds_file")
         
         cat <<EOF
-${yellow}=========================hysteria通用格式:===================================${plain}
+ =========================hysteria通用格式:=================================== 
   地址: ${hysteria_domain}
   端口: $((hysteria_port))
   端口跳跃: 20000-50000
   密码auth: ${hysteria_auth}
   混淆obfs: ${hysteria_obfs}
 
-${yellow}=========================hysteria-sing-box配置:===================================${plain}
+ =========================hysteria-sing-box配置:=================================== 
 $(cat "${CLIENT_FILE_PATH}/hysteria_client.json")
 
-${yellow}=========================hysteria-clash-meta配置文件:===================================${plain}
+ =========================hysteria-clash-meta配置文件:=================================== 
 proxies:
   - name: hysteria
     type: hysteria
@@ -1110,7 +1110,7 @@ show_tuic() {
         tuic_domain=$(jq -r '.outbounds[1].tls.server_name' "$tuic_outbounds_file")
 
         cat <<EOF
-${yellow}=========================tuic通用格式:=========================${plain}
+ =========================tuic通用格式:========================= 
   地址: ${tuic_domain}
   端口: $((tuic_port))
   uuid: ${tuic_uuid}
@@ -1119,10 +1119,10 @@ ${yellow}=========================tuic通用格式:=========================${pl
   拥塞控制器: bbr
   udp-relay-mode: native
 
-${yellow}=========================tuic-sing-box配置:=========================${plain}
+ =========================tuic-sing-box配置:========================= 
 $(cat "${CLIENT_FILE_PATH}/tuic_client.json")
 
-${yellow}=========================tuic-clash-meta配置文件:=========================${plain}
+ =========================tuic-clash-meta配置文件:========================= 
 proxies:
   - name: tuic
     server: \${tuic_domain}
@@ -1359,7 +1359,7 @@ show_vlessws() {
         wslink="${vlessws_uuid}@${vlessws_domain}:${vlessws_port}?encryption=none&security=tls&sni=${vlessws_domain}&alpn=h2%2Chttp%2F1.1&fp=chrome&type=ws&host=${vlessws_domain}&path=/${vlessws_path}#singboxvless"
 
         cat <<EOF
-${yellow}================================vless ws tls通用配置参数:===========================${plain}
+ ================================vless ws tls通用配置参数:=========================== 
   协议: vless
   地址: ${vlessws_domain}
   端口: $((vlessws_port))
@@ -1369,13 +1369,13 @@ ${yellow}================================vless ws tls通用配置参数:========
   路径: /${vlessws_path}
   底层传输: tls
 
-${yellow}================================vless ws tls通用链接格式:===========================${plain}
+ ================================vless ws tls通用链接格式:=========================== 
   vless://${wslink}
 
-${yellow}================================vless-sing-box配置文件:===========================${plain}
+ ================================vless-sing-box配置文件:=========================== 
 $(cat "${CLIENT_FILE_PATH}/vlessws_client.json")
 
-${yellow}================================vless ws tls clash-meta配置文件:===========================${plain}
+ ================================vless ws tls clash-meta配置文件:=========================== 
 proxies:
   - name: vlessws
     server: ${vlessws_domain}
@@ -1550,10 +1550,10 @@ show_shadowtls() {
         shadowtls_domain=$(jq -r '.outbounds[2].tls.server_name' "$shadowtls_outbounds_file")
 
         cat <<EOF
-${yellow}================================shadowtls sing-box配置文件:==============================${plain}
+ ================================shadowtls sing-box配置文件:============================== 
 $(cat "${CLIENT_FILE_PATH}/shadowtls_client.json")
 
-${yellow}================================shadowtls clash-meta配置文件:==============================${plain}
+ ================================shadowtls clash-meta配置文件:============================== 
 proxies:
   - name: ShadowTLS v3
     type: ss
@@ -1720,7 +1720,7 @@ show_reality() {
         reality_domain=$(jq -r '.outbounds[1].tls.server_name' "$reality_outbounds_file")
         link="${reality_uuid}@$(getIp):$((reality_port))?security=reality&flow=xtls-rprx-vision&fp=chrome&pbk=${reality_public_key}&sni=${reality_domain}&spx=%2F&sid=${reality_shortid}#VLESS-XTLS-uTLS-REALITY"
         cat <<EOF
-${yellow}================================reality clash-meta配置参数:==========================${plain}
+ ================================reality clash-meta配置参数:========================== 
 proxies:
   - name: reality
     type: vless
@@ -1738,7 +1738,7 @@ proxies:
         short-id: ${reality_shortid}
 
 
-${yellow}================================reality通用配置参数:==========================${plain}
+ ================================reality通用配置参数:========================== 
   地址: $(getIp)
   端口: ${reality_port}
   uuid: ${reality_uuid}
@@ -1748,7 +1748,7 @@ ${yellow}================================reality通用配置参数:=============
   publickey: ${reality_public_key}
   shortid: ${reality_shortid}
 
-${yellow}================================reality通用链接格式:==========================${plain}
+ ================================reality通用链接格式:========================== 
   vless://${link}
 EOF
     fi
