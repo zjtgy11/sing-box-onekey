@@ -826,8 +826,8 @@ install_hysteria() {
     set_default_value hysteria_auth $(${BINARY_FILE_PATH} generate uuid) "请输入密码"
     BLUE "auth为：$hysteria_auth"
     # 读取输入的hysteria-混淆
-    # set_default_value hysteria_obfs $(${BINARY_FILE_PATH} generate uuid) "请输入混淆"
-    # BLUE "obfs为：$hysteria_obfs"
+    set_default_value hysteria_obfs $(${BINARY_FILE_PATH} generate uuid) "请输入混淆"
+    BLUE "obfs为：$hysteria_obfs"
     # 调用函数并将输出赋值给变量
     # 开启端口跳跃默认为20000-50000
     # IPv4
@@ -854,6 +854,7 @@ install_hysteria() {
     "listen_port": $((hysteria_port)),
     "up_mbps": 100,
     "down_mbps": 100,
+    "obfs": "${hysteria_obfs}",
     "users": [
         {
             "auth_str": "${hysteria_auth}"
@@ -893,6 +894,7 @@ EOF
         "up_mbps": 50,
         "down_mbps": 100,
         "auth_str": "${hysteria_auth}",
+        "obfs": "${hysteria_obfs}",
         "tls": {
             "enabled": true,
             "server_name": "${hysteria_domain}",
@@ -941,7 +943,7 @@ show_hysteria() {
     HYSTERIA_OUTBOUNDS_FILE="${CONFIG_FILE_PATH}/hysteria/hysteria_outbounds.json"
     if [ -f "$HYSTERIA_OUTBOUNDS_FILE" ]; then
         hysteria_port=$(jq -r '.outbounds[1].server_port' "$HYSTERIA_OUTBOUNDS_FILE")
-        #hysteria_obfs=$(jq -r '.outbounds[1].obfs' "$HYSTERIA_OUTBOUNDS_FILE")
+        hysteria_obfs=$(jq -r '.outbounds[1].obfs' "$HYSTERIA_OUTBOUNDS_FILE")
         hysteria_auth=$(jq -r '.outbounds[1].auth_str' "$HYSTERIA_OUTBOUNDS_FILE")
         hysteria_domain=$(jq -r '.outbounds[1].tls.server_name' "$HYSTERIA_OUTBOUNDS_FILE")
         show_notice "hysteria通用格式"
@@ -949,7 +951,7 @@ show_hysteria() {
         BLUE "端口：$((hysteria_port))"
         BLUE "端口跳跃20000-50000"
         BLUE "密码auth：${hysteria_auth}"
-        #BLUE "混淆obfs：${hysteria_obfs}"
+        BLUE "混淆obfs：${hysteria_obfs}"
         show_notice "hysteria-sing-box配置"
         cat "${CLIENT_FILE_PATH}/hysteria_client.json"
         show_notice "hysteria-clash-meta配置文件"
@@ -963,7 +965,7 @@ show_hysteria() {
         BLUE "    ports: 20000-50000 # port 不可省略"
         BLUE "    auth_str: ${hysteria_auth}"
         BLUE "    auth-str: ${hysteria_auth}"
-        #BLUE "    obfs: ${hysteria_obfs}"
+        BLUE "    obfs: ${hysteria_obfs}"
         BLUE "    alpn:"
         BLUE "      - h3"
         BLUE "    protocol: udp # 支持 udp/wechat-video/faketcp"
