@@ -839,30 +839,39 @@ install_hysteria() {
 {
     "inbounds": [
         {
-            "type": "hysteria",
-            "tag": "hysteria-in",
-            "sniff": true,
-            "sniff_override_destination": true,
-            "listen": "::",
-            "listen_port": $hysteria_port,
-            "up_mbps": 100,
-            "down_mbps": 100,
-            "obfs": "$hysteria_obfs",
-            "users": [
-                {
+                "type": "hysteria",
+                "tag": "hysteria-in",
+                "listen": "::",
+                "listen_port": $((hysteria_port)),
+                "tcp_fast_open": false,
+                "udp_fragment": true,
+                "sniff": true,
+                "sniff_override_destination": false,
+                "proxy_protocol": false,
+                "proxy_protocol_accept_no_header": false,
+                "up_mbps": 500,
+                "down_mbps": 500,
+                "obfs": "$hysteria_obfs",
+                "users": [
+                    {
                     "auth_str": "$hysteria_auth"
-                }
-            ],
-            "tls": {
-                "enabled": true,
-                "alpn": [
-                    "h3"
+                    }
                 ],
-                "server_name": "$hysteria_domain",
-                "certificate_path": "$hysteria_cert",
-                "key_path": "$hysteria_key"
-            }
-        }
+
+                "recv_window_conn": 15728640,
+                "recv_window_client": 67108864,
+                "max_conn_client": 2048,
+                "disable_mtu_discovery": false,
+                "tls": {
+                        "enabled": true,
+                        "alpn": [
+                            "h3"
+                        ],
+                        "server_name": "$hysteria_domain",
+                        "certificate_path": "$hysteria_cert",
+                        "key_path": "$hysteria_key"
+                    }
+    }
     ]
 }
 EOF
@@ -879,23 +888,29 @@ EOF
                 "hysteria"
             ]
         },
-        {
+            {
             "type": "hysteria",
             "tag": "hysteria",
             "server": "$hysteria_domain",
             "server_port": ${2:-$hysteria_port},
-            "up_mbps": 50,
-            "down_mbps": 100,
-            "auth_str": "$hysteria_auth",
+            "up_mbps": 100,
+            "down_mbps": 500,
             "obfs": "$hysteria_obfs",
+            "auth_str": "$hysteria_auth",
+            "disable_mtu_discovery": false,
             "tls": {
                 "enabled": true,
+                "disable_sni": false,
                 "server_name": "$hysteria_domain",
+                "insecure": false,
                 "alpn": [
-                    "h3"
+                "h3"
                 ]
-            }
-        },
+            },
+            "connect_timeout": "5s",
+            "tcp_fast_open": false,
+            "udp_fragment": true
+            },
         {
             "tag": "direct",
             "type": "direct"
@@ -959,16 +974,21 @@ proxies:
     type: hysteria
     server: ${hysteria_domain}
     port: $((hysteria_port))
-    # ports: 1000,2000-3000,4000 # port 不可省略
-    ports: 20000-50000 # port 不可省略
+    ports: 20000-50000
     auth_str: ${hysteria_auth}
-    auth-str: ${hysteria_auth}
     obfs: ${hysteria_obfs}
-    alpn:
-      - h3
-    protocol: udp # 支持 udp/wechat-video/faketcp
-    up: "100 Mbps" # 若不写单位,默认为 Mbps
-    down: "100 Mbps" # 若不写单位,默认为 Mbps
+    alpn: 
+        - h3
+    protocol: udp 
+    up: '100'
+    down: '500'
+    #sni: server.com
+    #skip-cert-verify: false
+    recv_window_conn: 15728640
+    recv_window: 67108864
+    #ca: "./my.ca"
+    #ca_str: "xyz"
+    disable_mtu_discovery: false
 EOF
     fi
 }
