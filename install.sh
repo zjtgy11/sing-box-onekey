@@ -1297,7 +1297,8 @@ install_vlessws() {
     ]}
 
 EOF
-
+    #TODO 安装nginx
+    
     cat <<EOF >${CONFIG_FILE_PATH}/vlessws/vlessws_outbounds.json
 {
     "outbounds": [
