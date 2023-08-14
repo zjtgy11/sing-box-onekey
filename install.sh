@@ -782,18 +782,13 @@ EOF
 show_merge(){
     MERGE_OUTBOUNDS_FILE="${CONFIG_FILE_PATH}/merge/merge_outbounds.json"
     if [ -f "$MERGE_OUTBOUNDS_FILE" ]; then
-        if [ "$#" -gt 0 ]; then
-            # 如果函数带有参数，则跳过前三个函数
+            show_vlessws "@"
+            show_reality "@"
+            show_shadowtls "@"
+            show_hysteria "@"
             show_notice "集合sing-box配置"
             cat "${CLIENT_FILE_PATH}/merge_client.json"
-        else
-            show_vlessws
-            show_reality
-            show_shadowtls
-            show_hysteria
-            show_notice "集合sing-box配置"
-            cat "${CLIENT_FILE_PATH}/merge_client.json"
-        fi
+    
     fi
 
 }
@@ -956,7 +951,12 @@ show_hysteria() {
         hysteria_obfs=$(jq -r '.outbounds[1].obfs' "$hysteria_outbounds_file")
         hysteria_auth=$(jq -r '.outbounds[1].auth_str' "$hysteria_outbounds_file")
         hysteria_domain=$(jq -r '.outbounds[1].tls.server_name' "$hysteria_outbounds_file")
-        
+        if [ $# -eq 0 ]; then
+            echo -e "=========================hysteria-sing-box配置:===================================" 
+            cat "${CLIENT_FILE_PATH}/hysteria_client.json"
+        fi
+
+
         cat <<EOF
  =========================hysteria通用格式:=================================== 
   地址: ${hysteria_domain}
@@ -965,8 +965,7 @@ show_hysteria() {
   密码auth: ${hysteria_auth}
   混淆obfs: ${hysteria_obfs}
 
- =========================hysteria-sing-box配置:=================================== 
-$(cat "${CLIENT_FILE_PATH}/hysteria_client.json")
+
 
  =========================hysteria-clash-meta配置文件:=================================== 
 proxies:
@@ -1128,7 +1127,10 @@ show_tuic() {
         tuic_uuid=$(jq -r '.outbounds[1].uuid' "$tuic_outbounds_file")
         tuic_password=$(jq -r '.outbounds[1].password' "$tuic_outbounds_file")
         tuic_domain=$(jq -r '.outbounds[1].tls.server_name' "$tuic_outbounds_file")
-
+        if [ $# -eq 0 ]; then
+            echo -e " =========================tuic-sing-box配置:=========================" 
+            cat "${CLIENT_FILE_PATH}/tuic_client.json"
+        fi
         cat <<EOF
  =========================tuic通用格式:========================= 
   地址: ${tuic_domain}
@@ -1139,8 +1141,7 @@ show_tuic() {
   拥塞控制器: bbr
   udp-relay-mode: native
 
- =========================tuic-sing-box配置:========================= 
-$(cat "${CLIENT_FILE_PATH}/tuic_client.json")
+
 
  =========================tuic-clash-meta配置文件:========================= 
 proxies:
@@ -1377,7 +1378,10 @@ show_vlessws() {
         vlessws_path=$(jq -r '.outbounds[1].transport.path' "$vlessws_outbounds_file")
         vlessws_domain=$(jq -r '.outbounds[1].tls.server_name' "$vlessws_outbounds_file")
         wslink="${vlessws_uuid}@${vlessws_domain}:${vlessws_port}?encryption=none&security=tls&sni=${vlessws_domain}&alpn=h2%2Chttp%2F1.1&fp=chrome&type=ws&host=${vlessws_domain}&path=/${vlessws_path}#singboxvless"
-
+        if [ $# -eq 0 ]; then
+            echo -e "================================vless-sing-box配置文件:=========================== "
+            cat "${CLIENT_FILE_PATH}/vlessws_client.json"
+        fi
         cat <<EOF
  ================================vless ws tls通用配置参数:=========================== 
   协议: vless
@@ -1392,8 +1396,7 @@ show_vlessws() {
  ================================vless ws tls通用链接格式:=========================== 
   vless://${wslink}
 
- ================================vless-sing-box配置文件:=========================== 
-$(cat "${CLIENT_FILE_PATH}/vlessws_client.json")
+
 
  ================================vless ws tls clash-meta配置文件:=========================== 
 proxies:
@@ -1568,10 +1571,11 @@ show_shadowtls() {
         shadowtls_pwd=$(jq -r '.outbounds[2].password' "$shadowtls_outbounds_file")
         ss_pwd=$(jq -r '.outbounds[1].password' "$shadowtls_outbounds_file")
         shadowtls_domain=$(jq -r '.outbounds[2].tls.server_name' "$shadowtls_outbounds_file")
-
+    if [ $# -eq 0 ]; then
+        echo -e "================================shadowtls sing-box配置文件:==============================" 
+        cat "${CLIENT_FILE_PATH}/shadowtls_client.json"
+    fi
         cat <<EOF
- ================================shadowtls sing-box配置文件:============================== 
-$(cat "${CLIENT_FILE_PATH}/shadowtls_client.json")
 
  ================================shadowtls clash-meta配置文件:============================== 
 proxies:
@@ -1739,6 +1743,12 @@ show_reality() {
         reality_shortid=$(jq -r '.outbounds[1].tls.reality.short_id' "$reality_outbounds_file")
         reality_domain=$(jq -r '.outbounds[1].tls.server_name' "$reality_outbounds_file")
         link="${reality_uuid}@$(getIp):$((reality_port))?security=reality&flow=xtls-rprx-vision&fp=chrome&pbk=${reality_public_key}&sni=${reality_domain}&spx=%2F&sid=${reality_shortid}#VLESS-XTLS-uTLS-REALITY"
+        
+        if [ $# -eq 0 ]; then
+            echo -e "================================reality sing-box配置文件:==============================" 
+            cat "${CLIENT_FILE_PATH}/reality_client.json"
+        fi
+        
         cat <<EOF
  ================================reality clash-meta配置参数:========================== 
 proxies:
@@ -2122,13 +2132,13 @@ EOF
 }
 #展示订阅
 show_procotol(){
-    show_hysteria
-    show_naive
-    show_reality
-    show_shadowtls
-    show_tuic
-    show_vlessws
-    show_merge "$@"
+    show_hysteria 
+    show_naive 
+    show_reality 
+    show_shadowtls 
+    show_tuic 
+    show_vlessws 
+    show_merge
 }
 edit_config(){
     show_notice "本方式为直接打开配置文件进行修改"
