@@ -91,7 +91,7 @@ show_author_info() {
     # 设置作者信息
     author="Masheep"
     email="vveg26@outlook.com"
-    website="https://blog.piig.top"
+    website="https://blog.mareep.net"
 
     # 显示作者信息框
     echo "======================================================="
