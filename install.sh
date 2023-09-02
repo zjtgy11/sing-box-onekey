@@ -144,7 +144,7 @@ set_default_value() {
 validate_port() {
     local port=${1:?missing argument}
     while true; do
-        if netstat -ant | grep -q ":${port} "; then
+        if ss -ntlp | grep -q ":${port} "; then
             echo "端口已被占用，请重新输入" >&2
         elif ! [[ $port =~ ^[0-9]+$ ]]; then
             echo "端口必须为数字，请重新输入" >&2
@@ -336,9 +336,9 @@ create_or_delete_path() {
 #install some common utils
 install_base() {
     if [[ ${OS_RELEASE} == "ubuntu" || ${OS_RELEASE} == "debian" ]]; then
-        apt update && apt install wget tar jq iptables -y
+        apt update && apt install wget tar jq iptables iproute2 -y
     elif [[ ${OS_RELEASE} == "centos" ]]; then
-        yum update && yum install wget tar jq iptables -y
+        yum update && yum install wget tar jq iptables iproute2 -y
     fi
 }
 
