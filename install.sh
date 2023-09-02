@@ -111,7 +111,7 @@ show_notice() {
 
     PINK "###########################################################################################"
     PINK "                                                                                          "
-    PINK "                        ${message}                                                      "
+    PINK "                          ${message}                                                      "
     PINK "                                                                                          "
     PINK "###########################################################################################"
 }
@@ -943,10 +943,11 @@ EOF
 
 # 查看hysteria客户端信息
 show_hysteria() {
-    show_notice "hysteria客户端信息"
+    
     # 读取 JSON 文件的特定字段值
     hysteria_outbounds_file="${CONFIG_FILE_PATH}/hysteria/hysteria_outbounds.json"
     if [ -f "$hysteria_outbounds_file" ]; then
+        show_notice "hysteria客户端信息"
         hysteria_port=$(jq -r '.outbounds[1].server_port' "$hysteria_outbounds_file")
         hysteria_obfs=$(jq -r '.outbounds[1].obfs' "$hysteria_outbounds_file")
         hysteria_auth=$(jq -r '.outbounds[1].auth_str' "$hysteria_outbounds_file")
@@ -1119,10 +1120,11 @@ EOF
 
 # 查看tuic客户端信息
 show_tuic() {
-    show_notice "tuic客户端信息"
+    
     # Read specific field values from JSON file
     tuic_outbounds_file="${CONFIG_FILE_PATH}/tuic/tuic_outbounds.json"
     if [ -f "$tuic_outbounds_file" ]; then
+        show_notice "tuic客户端信息"
         tuic_port=$(jq -r '.outbounds[1].server_port' "$tuic_outbounds_file")
         tuic_uuid=$(jq -r '.outbounds[1].uuid' "$tuic_outbounds_file")
         tuic_password=$(jq -r '.outbounds[1].password' "$tuic_outbounds_file")
@@ -1370,10 +1372,11 @@ EOF
 }
 
 show_vlessws() {
-    show_notice "vless ws tls客户端信息"
+    
     # Read specific field values from JSON file
     vlessws_outbounds_file="${CONFIG_FILE_PATH}/vlessws/vlessws_outbounds.json"
     if [ -f "$vlessws_outbounds_file" ]; then
+        show_notice "vless ws tls客户端信息"
         vlessws_port=$(jq -r '.outbounds[1].server_port' "$vlessws_outbounds_file")
         vlessws_uuid=$(jq -r '.outbounds[1].uuid' "$vlessws_outbounds_file")
         vlessws_path=$(jq -r '.outbounds[1].transport.path' "$vlessws_outbounds_file")
@@ -1564,10 +1567,11 @@ EOF
 }
 
 show_shadowtls() {
-    show_notice "shadowtls客户端信息"
+    
     # Read specific field values from JSON file
     shadowtls_outbounds_file="${CONFIG_FILE_PATH}/shadowtls/shadowtls_outbounds.json"
     if [ -f "$shadowtls_outbounds_file" ]; then
+        show_notice "shadowtls客户端信息"
         shadowtls_port=$(jq -r '.outbounds[2].server_port' "$shadowtls_outbounds_file")
         shadowtls_pwd=$(jq -r '.outbounds[2].password' "$shadowtls_outbounds_file")
         ss_pwd=$(jq -r '.outbounds[1].password' "$shadowtls_outbounds_file")
@@ -1738,6 +1742,7 @@ show_reality() {
     # Read specific field values from JSON file
     reality_outbounds_file="${CONFIG_FILE_PATH}/reality/reality_outbounds.json"
     if [ -f "$reality_outbounds_file" ]; then
+        show_notice "reality客户端信息"
         reality_port=$(jq -r '.outbounds[1].server_port' "$reality_outbounds_file")
         reality_uuid=$(jq -r '.outbounds[1].uuid' "$reality_outbounds_file")
         reality_public_key=$(jq -r '.outbounds[1].tls.reality.public_key' "$reality_outbounds_file")
