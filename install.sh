@@ -336,9 +336,9 @@ create_or_delete_path() {
 #install some common utils
 install_base() {
     if [[ ${OS_RELEASE} == "ubuntu" || ${OS_RELEASE} == "debian" ]]; then
-        apt install wget tar jq iptables -y
+        apt update && apt install wget tar jq iptables -y
     elif [[ ${OS_RELEASE} == "centos" ]]; then
-        yum install wget tar jq iptables -y
+        yum update && yum install wget tar jq iptables -y
     fi
 }
 
