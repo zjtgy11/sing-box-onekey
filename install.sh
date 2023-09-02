@@ -490,7 +490,7 @@ choose_procotol() {
     PINK " 2. 安装 Reality"
     PINK " 3. 安装Shadowtls v3"
     PINK " 4. 安装 NaiveProxy"
-    BLUE " 5. 安装vless ws tls（可开cdn）"
+    BLUE " 5. 安装vless ws tls"
     PINK " 6. 安装 TUIC v5"
     PINK " 7. 安装 Hysteria(可开启端口跳跃)"
     echo "-------------------------------------------------------------"
