@@ -1148,11 +1148,11 @@ show_tuic() {
  =========================tuic-clash-meta配置文件:========================= 
 proxies:
   - name: tuic
-    server: \${tuic_domain}
-    port: \$((tuic_port))
+    server: ${tuic_domain}
+    port: $((tuic_port))
     type: tuic
-    uuid: \${tuic_uuid}
-    password: \${tuic_pwd}
+    uuid: ${tuic_uuid}
+    password: ${tuic_pwd}
     alpn: [h3]
     disable-sni: true
     reduce-rtt: true
